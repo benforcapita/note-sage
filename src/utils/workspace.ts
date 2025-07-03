@@ -16,6 +16,22 @@ class WorkspaceManager {
     lastUpdated: new Date().toISOString()
   };
 
+  private debouncePersist: () => void;
+
+  private createDebouncePersist(delay: number = 500) {
+    let timeoutId: number | undefined;
+    return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+      // Use window.setTimeout to get the numeric timeout id in both browser and Node.js typings
+      timeoutId = window.setTimeout(() => {
+        this.persist();
+        timeoutId = undefined;
+      }, delay);
+    };
+  }
+
   // Load workspace from file
   async loadWorkspace(file: File): Promise<WorkspaceData> {
     try {
@@ -143,6 +159,8 @@ class WorkspaceManager {
   constructor() {
     // Restore workspace (if any) as soon as the manager is instantiated.
     this.restoreFromLocalStorage();
+    // Initialize debounced persist to avoid excessive writes to localStorage
+    this.debouncePersist = this.createDebouncePersist();
   }
 
   // No-op autoSave maintained for API compatibility – now simply writes to localStorage
