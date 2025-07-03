@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Sidebar } from './components/Sidebar';
 import { NoteEditor } from './components/NoteEditor';
 import { ChatPanel } from './components/ChatPanel';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Note, ChatMessage } from './types';
 import { storage } from './utils/storage';
@@ -78,6 +79,8 @@ function AppContent() {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 font-['Inter'] transition-colors duration-200">
+      <OfflineIndicator />
+      
       {/* Sidebar */}
       <Sidebar
         notes={notes}

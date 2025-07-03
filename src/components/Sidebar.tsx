@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, Plus, FileText, Tag, Calendar, X, Menu, MessageSquare } from 'lucide-react';
 import { Note } from '../types';
 import { ThemeToggle } from './ThemeToggle';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface SidebarProps {
   notes: Note[];
@@ -80,6 +81,7 @@ export function Sidebar({
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <PWAInstallButton />
             <ThemeToggle />
             <button
               onClick={onToggle}
