@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Trash2, Tag, Calendar, Menu, MessageCircle, Download, Send, Plus } from 'lucide-react';
+import { Save, Trash2, Tag, Calendar, Menu, MessageCircle, Download, Send } from 'lucide-react';
 import { Note, NoteMessage } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { detectTextDirection, getTextDirectionClass } from '../utils/textDirection';

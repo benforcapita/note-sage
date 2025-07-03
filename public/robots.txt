@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# PWA files
+Allow: /manifest.webmanifest
+Allow: /sw.js
+Allow: /workbox-*.js
+
+# Icons and assets
+Allow: /pwa-*.png
+Allow: /apple-touch-icon.png
+Allow: /maskable-icon-*.png
+
+Sitemap: https://your-domain.com/sitemap.xml

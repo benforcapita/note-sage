@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, X, Loader2 } from 'lucide-react';
+import { Send, Bot, Sparkles, X, Loader2 } from 'lucide-react';
 import { ChatMessage, Note } from '../types';
 import { llmService } from '../utils/llm';
 import { detectTextDirection, getTextDirectionClass } from '../utils/textDirection';

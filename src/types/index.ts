@@ -1,8 +1,8 @@
 export interface NoteMessage {
   id: string;
+  type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  type: 'message';
 }
 
 export interface Note {

@@ -1,4 +1,4 @@
-import { Note, ChatMessage } from '../types';
+import { Note } from '../types';
 
 // Mock LLM service - replace with actual API integration
 export class LLMService {

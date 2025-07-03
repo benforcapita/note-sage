@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Smartphone, Plus } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -15,7 +15,7 @@ export function PWAInstallButton() {
   useEffect(() => {
     // Check if app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInWebAppiOS = (window.navigator as any).standalone === true;
+    const isInWebAppiOS = (window.navigator as unknown as { standalone?: boolean }).standalone === true;
     setIsInstalled(isStandalone || isInWebAppiOS);
 
     // Show manual instructions after a delay if no install prompt appears

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, FileText, Tag, Calendar, X, Menu, MessageSquare } from 'lucide-react';
+import { Search, Plus, Tag, Calendar, X, MessageSquare } from 'lucide-react';
 import { Note } from '../types';
 import { ThemeToggle } from './ThemeToggle';
 import { PWAInstallButton } from './PWAInstallButton';

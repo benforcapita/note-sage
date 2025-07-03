@@ -1,15 +1,38 @@
-import { Note, ChatMessage } from '../types';
+import { Note, ChatMessage, NoteMessage } from '../types';
+
+interface StoredNote {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+  messages: StoredNoteMessage[];
+}
+
+interface StoredNoteMessage {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+interface StoredChatMessage {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
 
 export const storage = {
   notes: {
     get: (): Note[] => {
       try {
         const notes = localStorage.getItem('notes');
-        return notes ? JSON.parse(notes).map((note: any) => ({
+        return notes ? JSON.parse(notes).map((note: StoredNote) => ({
           ...note,
           createdAt: new Date(note.createdAt),
           updatedAt: new Date(note.updatedAt),
-          messages: (note.messages || []).map((msg: any) => ({
+          messages: (note.messages || []).map((msg: StoredNoteMessage): NoteMessage => ({
             ...msg,
             timestamp: new Date(msg.timestamp)
           }))
@@ -30,7 +53,7 @@ export const storage = {
     get: (): ChatMessage[] => {
       try {
         const messages = localStorage.getItem('chatMessages');
-        return messages ? JSON.parse(messages).map((msg: any) => ({
+        return messages ? JSON.parse(messages).map((msg: StoredChatMessage): ChatMessage => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         })) : [];
