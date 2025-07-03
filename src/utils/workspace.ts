@@ -68,14 +68,14 @@ class WorkspaceManager {
   updateNotes(notes: Note[]) {
     this.data.notes = notes;
     this.data.lastUpdated = new Date().toISOString();
-    this.persist();
+    this.debouncePersist();
   }
 
   // Update chat messages in workspace
   updateChatMessages(messages: ChatMessage[]) {
     this.data.chatMessages = messages;
     this.data.lastUpdated = new Date().toISOString();
-    this.persist();
+    this.debouncePersist();
   }
 
   // Get current workspace data
