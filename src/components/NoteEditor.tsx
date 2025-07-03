@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Trash2, Tag, Calendar, Menu, MessageCircle, Download, Send, Plus } from 'lucide-react';
+import { Trash2, Tag, Calendar, Menu, MessageCircle, Download, Send } from 'lucide-react';
 import { Note, NoteMessage } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { detectTextDirection, getTextDirectionClass } from '../utils/textDirection';
@@ -26,7 +26,6 @@ export function NoteEditor({
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [currentMessage, setCurrentMessage] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -53,25 +52,44 @@ export function NoteEditor({
     }
   }, [currentMessage]);
 
-  const handleSave = async () => {
+  // Auto-save when title changes (after a delay to avoid excessive saves while typing)
+  useEffect(() => {
+    if (!note || title === note.title) return;
+    
+    const timeoutId = setTimeout(() => {
+      onSave({
+        ...note,
+        title,
+        messages,
+        tags,
+        updatedAt: new Date()
+      });
+    }, 1000); // 1 second delay
+
+    return () => clearTimeout(timeoutId);
+  }, [title, note, messages, tags, onSave]);
+
+  // Auto-save when tags change
+  useEffect(() => {
     if (!note) return;
     
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // Check if tags have actually changed
+    const tagsChanged = tags.length !== note.tags.length || 
+                       tags.some((tag, index) => tag !== note.tags[index]);
     
-    onSave({
-      ...note,
-      title,
-      messages,
-      tags,
-      updatedAt: new Date()
-    });
-    
-    setIsSaving(false);
-  };
+    if (tagsChanged) {
+      onSave({
+        ...note,
+        title,
+        messages,
+        tags,
+        updatedAt: new Date()
+      });
+    }
+  }, [tags, note, title, messages, onSave]);
 
   const handleAddMessage = () => {
-    if (!currentMessage.trim()) return;
+    if (!currentMessage.trim() || !note) return;
 
     const newMessage: NoteMessage = {
       id: uuidv4(),
@@ -80,8 +98,18 @@ export function NoteEditor({
       type: 'message'
     };
 
-    setMessages([...messages, newMessage]);
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
     setCurrentMessage('');
+
+    // Automatically save the note with the new message
+    onSave({
+      ...note,
+      title,
+      messages: updatedMessages,
+      tags,
+      updatedAt: new Date()
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -223,14 +251,7 @@ export function NoteEditor({
           >
             <MessageCircle className="w-5 h-5" />
           </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            <span>{isSaving ? 'Saving...' : 'Save'}</span>
-          </button>
+
           <button
             onClick={() => onDelete(note.id)}
             className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
