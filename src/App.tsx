@@ -4,9 +4,11 @@ import { Sidebar } from './components/Sidebar';
 import { NoteEditor } from './components/NoteEditor';
 import { ChatPanel } from './components/ChatPanel';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { WorkspaceManager } from './components/WorkspaceManager';
 import { PWAPrompts } from './components/PWAPrompts';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Note, ChatMessage } from './types';
+import { workspaceManager, WorkspaceData } from './utils/workspace';
 import { storage } from './utils/storage';
 
 function AppContent() {
@@ -16,30 +18,72 @@ function AppContent() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentWorkspaceFile, setCurrentWorkspaceFile] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Load data from localStorage on app start
+  // Load data on app start - try workspace first, then fall back to localStorage
   useEffect(() => {
-    const savedNotes = storage.notes.get();
-    const savedMessages = storage.chat.get();
+    const workspaceData = workspaceManager.getData();
     
-    setNotes(savedNotes);
-    setChatMessages(savedMessages);
+    if (workspaceData.notes.length > 0 || workspaceData.chatMessages.length > 0) {
+      // Use workspace data if available
+      setNotes(workspaceData.notes);
+      setChatMessages(workspaceData.chatMessages);
+      setCurrentWorkspaceFile(workspaceManager.getCurrentWorkspaceFile());
+    } else {
+      // Fall back to localStorage for backwards compatibility
+      const savedNotes = storage.notes.get();
+      const savedMessages = storage.chat.get();
+      
+      setNotes(savedNotes);
+      setChatMessages(savedMessages);
+      
+      // If we have localStorage data, update the workspace
+      if (savedNotes.length > 0 || savedMessages.length > 0) {
+        workspaceManager.updateNotes(savedNotes);
+        workspaceManager.updateChatMessages(savedMessages);
+      }
+    }
     
     // Select the first note if available
-    if (savedNotes.length > 0) {
-      setSelectedNoteId(savedNotes[0].id);
+    const currentNotes = workspaceData.notes.length > 0 ? workspaceData.notes : storage.notes.get();
+    if (currentNotes.length > 0) {
+      setSelectedNoteId(currentNotes[0].id);
     }
   }, []);
 
-  // Save notes to localStorage whenever notes change
+  // Update workspace whenever notes change
   useEffect(() => {
+    workspaceManager.updateNotes(notes);
+    // Also keep localStorage updated for backwards compatibility
     storage.notes.set(notes);
   }, [notes]);
 
-  // Save chat messages to localStorage whenever messages change
+  // Update workspace whenever chat messages change
   useEffect(() => {
+    workspaceManager.updateChatMessages(chatMessages);
+    // Also keep localStorage updated for backwards compatibility
     storage.chat.set(chatMessages);
   }, [chatMessages]);
+
+  const handleWorkspaceLoad = (data: WorkspaceData) => {
+    setNotes(data.notes);
+    setChatMessages(data.chatMessages);
+    setCurrentWorkspaceFile(workspaceManager.getCurrentWorkspaceFile());
+    setErrorMessage(null);
+    
+    // Select the first note if available
+    if (data.notes.length > 0) {
+      setSelectedNoteId(data.notes[0].id);
+    } else {
+      setSelectedNoteId(null);
+    }
+  };
+
+  const handleError = (message: string) => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(null), 5000);
+  };
 
   const handleCreateNote = () => {
     const newNote: Note = {
@@ -82,6 +126,24 @@ function AppContent() {
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 font-['Inter'] transition-colors duration-200">
       <OfflineIndicator />
       
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
+            {errorMessage}
+          </div>
+        </div>
+      )}
+
+      {/* Workspace Manager */}
+      <div className="fixed top-4 right-4 z-40">
+        <WorkspaceManager
+          onWorkspaceLoad={handleWorkspaceLoad}
+          onError={handleError}
+          currentWorkspaceFile={currentWorkspaceFile}
+        />
+      </div>
+
       {/* Sidebar */}
       <Sidebar
         notes={notes}
