@@ -20,6 +20,7 @@ function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentWorkspaceFile, setCurrentWorkspaceFile] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoadPromptVisible, setIsLoadPromptVisible] = useState<boolean>(false);
 
   // Load data on app start - try workspace first, then fall back to localStorage
   useEffect(() => {
@@ -33,15 +34,12 @@ function AppContent() {
     } else {
       // Fall back to localStorage for backwards compatibility
       const savedNotes = storage.notes.get();
-      const savedMessages = storage.chat.get();
       
       setNotes(savedNotes);
-      setChatMessages(savedMessages);
-      
-      // If we have localStorage data, update the workspace
-      if (savedNotes.length > 0 || savedMessages.length > 0) {
+
+      // If we have localStorage data for notes, migrate them to the workspace
+      if (savedNotes.length > 0) {
         workspaceManager.updateNotes(savedNotes);
-        workspaceManager.updateChatMessages(savedMessages);
       }
     }
     
@@ -49,6 +47,11 @@ function AppContent() {
     const currentNotes = workspaceData.notes.length > 0 ? workspaceData.notes : storage.notes.get();
     if (currentNotes.length > 0) {
       setSelectedNoteId(currentNotes[0].id);
+    }
+
+    // Show load prompt if no workspace file has been selected yet
+    if (!workspaceManager.getCurrentWorkspaceFile()) {
+      setIsLoadPromptVisible(true);
     }
   }, []);
 
@@ -62,8 +65,6 @@ function AppContent() {
   // Update workspace whenever chat messages change
   useEffect(() => {
     workspaceManager.updateChatMessages(chatMessages);
-    // Also keep localStorage updated for backwards compatibility
-    storage.chat.set(chatMessages);
   }, [chatMessages]);
 
   const handleWorkspaceLoad = (data: WorkspaceData) => {
@@ -71,6 +72,7 @@ function AppContent() {
     setChatMessages(data.chatMessages);
     setCurrentWorkspaceFile(workspaceManager.getCurrentWorkspaceFile());
     setErrorMessage(null);
+    setIsLoadPromptVisible(false);
     
     // Select the first note if available
     if (data.notes.length > 0) {
@@ -118,6 +120,12 @@ function AppContent() {
 
   const handleSendMessage = (message: ChatMessage) => {
     setChatMessages([...chatMessages, message]);
+  };
+
+  const handleCreateNewWorkspace = () => {
+    const data = workspaceManager.createNewWorkspace();
+    handleWorkspaceLoad(data);
+    setIsLoadPromptVisible(false);
   };
 
   const selectedNote = notes.find(note => note.id === selectedNoteId) || null;
@@ -176,6 +184,34 @@ function AppContent() {
           onClose={() => setIsChatOpen(false)}
         />
       </div>
+
+      {/* Load Workspace Prompt */}
+      {isLoadPromptVisible && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-80 text-center shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Load Workspace</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">You don't have an active workspace. Load an existing workspace file or create a new one to continue.</p>
+            <div className="flex space-x-4 justify-center">
+              <button
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                onClick={() => {
+                  // Trigger the Load button inside WorkspaceManager
+                  const loadButton = document.querySelector<HTMLButtonElement>('button[title="Load Workspace"]');
+                  loadButton?.click();
+                }}
+              >
+                Load
+              </button>
+              <button
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded"
+                onClick={handleCreateNewWorkspace}
+              >
+                New
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
