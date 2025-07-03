@@ -53,6 +53,8 @@ class WorkspaceManager {
     try {
       this.data.lastUpdated = new Date().toISOString();
       const dataString = JSON.stringify(this.data, null, 2);
+      // Persist latest version to localStorage as well
+      this.persist();
       return new Blob([dataString], { type: 'application/json' });
     } catch (error) {
       console.error('Failed to save workspace:', error);
@@ -64,12 +66,14 @@ class WorkspaceManager {
   updateNotes(notes: Note[]) {
     this.data.notes = notes;
     this.data.lastUpdated = new Date().toISOString();
+    this.persist();
   }
 
   // Update chat messages in workspace
   updateChatMessages(messages: ChatMessage[]) {
     this.data.chatMessages = messages;
     this.data.lastUpdated = new Date().toISOString();
+    this.persist();
   }
 
   // Get current workspace data
@@ -91,26 +95,57 @@ class WorkspaceManager {
       lastUpdated: new Date().toISOString()
     };
     this.currentWorkspaceFile = null;
+    this.persist();
     return this.data;
   }
 
-  // Auto-save functionality
-  async autoSave(): Promise<void> {
-    if (this.currentWorkspaceFile) {
-      try {
-        const blob = await this.saveWorkspace();
-        // Create a download link and trigger it for auto-save
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = this.currentWorkspaceFile;
-        // Note: Browsers prevent automatic downloads for security reasons
-        // We'll implement this as a manual save for now
-        URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-      }
+  // Persist the entire workspace to localStorage
+  private persist() {
+    try {
+      // We do not stringify Date objects directly; they are already plain ISO strings in this.data
+      localStorage.setItem('workspaceData', JSON.stringify(this.data));
+    } catch (error) {
+      console.error('Failed to persist workspace to localStorage:', error);
     }
+  }
+
+  // Attempt to restore workspace from localStorage (executed at construction time)
+  private restoreFromLocalStorage() {
+    try {
+      const raw = localStorage.getItem('workspaceData');
+      if (!raw) return;
+
+      const parsedData = JSON.parse(raw);
+
+      this.data = {
+        ...parsedData,
+        notes: (parsedData.notes || []).map((note: any) => ({
+          ...note,
+          createdAt: new Date(note.createdAt),
+          updatedAt: new Date(note.updatedAt),
+          messages: (note.messages || []).map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+        })),
+        chatMessages: (parsedData.chatMessages || []).map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+      };
+    } catch (error) {
+      console.error('Failed to restore workspace from localStorage:', error);
+    }
+  }
+
+  constructor() {
+    // Restore workspace (if any) as soon as the manager is instantiated.
+    this.restoreFromLocalStorage();
+  }
+
+  // No-op autoSave maintained for API compatibility – now simply writes to localStorage
+  async autoSave(): Promise<void> {
+    this.persist();
   }
 }
 

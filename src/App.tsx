@@ -33,15 +33,12 @@ function AppContent() {
     } else {
       // Fall back to localStorage for backwards compatibility
       const savedNotes = storage.notes.get();
-      const savedMessages = storage.chat.get();
       
       setNotes(savedNotes);
-      setChatMessages(savedMessages);
-      
-      // If we have localStorage data, update the workspace
-      if (savedNotes.length > 0 || savedMessages.length > 0) {
+
+      // If we have localStorage data for notes, migrate them to the workspace
+      if (savedNotes.length > 0) {
         workspaceManager.updateNotes(savedNotes);
-        workspaceManager.updateChatMessages(savedMessages);
       }
     }
     
@@ -62,8 +59,6 @@ function AppContent() {
   // Update workspace whenever chat messages change
   useEffect(() => {
     workspaceManager.updateChatMessages(chatMessages);
-    // Also keep localStorage updated for backwards compatibility
-    storage.chat.set(chatMessages);
   }, [chatMessages]);
 
   const handleWorkspaceLoad = (data: WorkspaceData) => {
