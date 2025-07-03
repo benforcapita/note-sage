@@ -22,6 +22,23 @@ function AppContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoadPromptVisible, setIsLoadPromptVisible] = useState<boolean>(false);
 
+  // Automatically download workspace file
+  const autoDownloadWorkspace = async () => {
+    try {
+      const blob = await workspaceManager.saveWorkspace();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `workspace-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to auto-download workspace:', error);
+    }
+  };
+
   // Load data on app start - try workspace first, then fall back to localStorage
   useEffect(() => {
     const workspaceData = workspaceManager.getData();
@@ -31,6 +48,9 @@ function AppContent() {
       setNotes(workspaceData.notes);
       setChatMessages(workspaceData.chatMessages);
       setCurrentWorkspaceFile(workspaceManager.getCurrentWorkspaceFile());
+      
+      // Automatically download workspace file if there's data
+      autoDownloadWorkspace();
     } else {
       // Fall back to localStorage for backwards compatibility
       const savedNotes = storage.notes.get();
@@ -40,6 +60,8 @@ function AppContent() {
       // If we have localStorage data for notes, migrate them to the workspace
       if (savedNotes.length > 0) {
         workspaceManager.updateNotes(savedNotes);
+        // Also auto-download if we migrated data
+        autoDownloadWorkspace();
       }
     }
     
