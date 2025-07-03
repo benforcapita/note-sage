@@ -92,8 +92,21 @@ export function Sidebar({
           </div>
         </div>
 
+        {/* PWA Status Info */}
+        <div className="px-6 pt-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+            <div className="flex items-center space-x-2 mb-1">
+              <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-medium text-blue-800 dark:text-blue-300">PWA Ready</span>
+            </div>
+            <p className="text-xs text-blue-600 dark:text-blue-400">
+              Install this app for offline access and a native experience!
+            </p>
+          </div>
+        </div>
+
         {/* Search */}
-        <div className="p-4">
+        <div className="px-6 pb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
             <input
@@ -107,7 +120,7 @@ export function Sidebar({
         </div>
 
         {/* Create Note Button */}
-        <div className="px-4 mb-4">
+        <div className="px-6 mb-4">
           <button
             onClick={onCreateNote}
             className="w-full flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105"
@@ -118,7 +131,7 @@ export function Sidebar({
         </div>
 
         {/* Notes List */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="flex-1 overflow-y-auto px-6 pb-4">
           {filteredNotes.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />

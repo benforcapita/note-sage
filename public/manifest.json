@@ -7,6 +7,7 @@
   "background_color": "#0F172A",
   "theme_color": "#3B82F6",
   "orientation": "portrait-primary",
+  "scope": "/",
   "icons": [
     {
       "src": "pwa-64x64.png",
@@ -47,5 +48,6 @@
   ],
   "categories": ["productivity", "utilities"],
   "lang": "en",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false
 }
