@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { NoteEditor } from './components/NoteEditor';
 import { ChatPanel } from './components/ChatPanel';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAPrompts } from './components/PWAPrompts';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Note, ChatMessage } from './types';
 import { storage } from './utils/storage';
@@ -121,6 +122,7 @@ function App() {
   return (
     <ThemeProvider>
       <AppContent />
+      <PWAPrompts />
     </ThemeProvider>
   );
 }
