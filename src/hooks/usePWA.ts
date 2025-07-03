@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { usePWAContext } from '../contexts/PWAContext';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -15,6 +16,7 @@ interface PWAHook {
 }
 
 export const usePWA = (): PWAHook => {
+  const { updateSW } = usePWAContext();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -25,7 +27,7 @@ export const usePWA = (): PWAHook => {
     // Check if app is already installed
     const checkInstalled = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isIOSStandalone = (window.navigator as any).standalone === true;
+      const isIOSStandalone = (window.navigator as unknown as { standalone?: boolean }).standalone === true;
       setIsInstalled(isStandalone || isIOSStandalone);
     };
 
@@ -49,8 +51,8 @@ export const usePWA = (): PWAHook => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    // Listen for service worker updates
-    const handleSWUpdate = () => {
+    // Listen for PWA update events
+    const handlePWAUpdate = () => {
       setHasUpdate(true);
     };
 
@@ -58,21 +60,14 @@ export const usePWA = (): PWAHook => {
     window.addEventListener('appinstalled', handleAppInstalled);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
-    // Check for service worker updates
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('controllerchange', handleSWUpdate);
-    }
+    window.addEventListener('pwa-update-available', handlePWAUpdate);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.removeEventListener('controllerchange', handleSWUpdate);
-      }
+      window.removeEventListener('pwa-update-available', handlePWAUpdate);
     };
   }, []);
 
@@ -93,13 +88,19 @@ export const usePWA = (): PWAHook => {
   };
 
   const updateApp = () => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistration().then((registration) => {
-        if (registration?.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          window.location.reload();
-        }
-      });
+    if (updateSW) {
+      // Use the new PWA update function
+      updateSW(true);
+    } else {
+      // Fallback to old method
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then((registration) => {
+          if (registration?.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            window.location.reload();
+          }
+        });
+      }
     }
   };
 

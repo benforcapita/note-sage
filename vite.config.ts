@@ -11,13 +11,17 @@ export default defineConfig({
       manifest: {
         name: 'NoteSage - AI-Powered Note Taking',
         short_name: 'NoteSage',
-        description: 'A beautiful note-taking app with AI-powered chat interface',
+        description: 'A beautiful note-taking app with AI-powered chat interface and offline support',
         theme_color: '#3B82F6',
         background_color: '#0F172A',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
+        lang: 'en',
+        dir: 'ltr',
+        categories: ['productivity', 'utilities'],
+        prefer_related_applications: false,
         icons: [
           {
             src: 'pwa-64x64.png',
@@ -44,11 +48,12 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,json}'],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
-        navigateFallback: 'index.html',
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
