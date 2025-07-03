@@ -41,6 +41,8 @@ class WorkspaceManager {
       };
       
       this.currentWorkspaceFile = file.name;
+      // Persist loaded workspace so that it can be restored on next launch
+      this.persist();
       return this.data;
     } catch (error) {
       console.error('Failed to load workspace:', error);
