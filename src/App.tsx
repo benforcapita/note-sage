@@ -149,6 +149,12 @@ function AppContent() {
           onWorkspaceLoad={handleWorkspaceLoad}
           onError={handleError}
           currentWorkspaceFile={currentWorkspaceFile}
+          onToggleChat={() => setIsChatOpen(!isChatOpen)}
+          isChatOpen={isChatOpen}
+          onDeleteChat={() => {
+            if (selectedNoteId) handleDeleteNote(selectedNoteId);
+          }}
+          hasSelectedNote={selectedNoteId !== null}
         />
       </div>
 
@@ -169,10 +175,7 @@ function AppContent() {
         <NoteEditor
           note={selectedNote}
           onSave={handleSaveNote}
-          onDelete={handleDeleteNote}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-          onToggleChat={() => setIsChatOpen(!isChatOpen)}
-          isChatOpen={isChatOpen}
         />
 
         {/* Chat Panel */}

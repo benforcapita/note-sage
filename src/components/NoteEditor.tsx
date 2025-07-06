@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trash2, Tag, Calendar, Menu, MessageCircle, Download, Send } from 'lucide-react';
+import { Trash2, Tag, Calendar, Menu, MessageCircle, Send } from 'lucide-react';
 import { Note, NoteMessage } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { detectTextDirection, getTextDirectionClass } from '../utils/textDirection';
@@ -7,19 +7,13 @@ import { detectTextDirection, getTextDirectionClass } from '../utils/textDirecti
 interface NoteEditorProps {
   note: Note | null;
   onSave: (note: Note) => void;
-  onDelete: (noteId: string) => void;
   onToggleSidebar: () => void;
-  onToggleChat: () => void;
-  isChatOpen: boolean;
 }
 
 export function NoteEditor({ 
   note, 
   onSave, 
-  onDelete, 
-  onToggleSidebar,
-  onToggleChat,
-  isChatOpen
+  onToggleSidebar
 }: NoteEditorProps) {
   const [title, setTitle] = useState('');
   const [messages, setMessages] = useState<NoteMessage[]>([]);
@@ -29,17 +23,21 @@ export function NoteEditor({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Sync internal state when the selected note changes (track by note ID to avoid unnecessary loops)
   useEffect(() => {
     if (note) {
       setTitle(note.title);
       setMessages(note.messages || []);
       setTags(note.tags);
+      setCurrentMessage(''); // clear any draft text when switching chats
     } else {
       setTitle('');
       setMessages([]);
       setTags([]);
+      setCurrentMessage('');
     }
-  }, [note]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -123,37 +121,6 @@ export function NoteEditor({
     setMessages(messages.filter(msg => msg.id !== messageId));
   };
 
-  const handleDownloadJSON = () => {
-    if (!note) return;
-
-    const exportData = {
-      id: note.id,
-      title,
-      messages: messages.map(msg => ({
-        id: msg.id,
-        content: msg.content,
-        timestamp: msg.timestamp.toISOString(),
-        type: msg.type
-      })),
-      tags,
-      createdAt: note.createdAt.toISOString(),
-      updatedAt: new Date().toISOString(),
-      exportedAt: new Date().toISOString()
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-      type: 'application/json' 
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'note'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
@@ -234,30 +201,7 @@ export function NoteEditor({
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <button
-            onClick={handleDownloadJSON}
-            className="flex items-center space-x-2 px-3 py-2 bg-green-500 dark:bg-green-600 text-white rounded-lg hover:bg-green-600 dark:hover:bg-green-700 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span>JSON</span>
-          </button>
-          <button
-            onClick={onToggleChat}
-            className={`p-2 rounded-lg transition-colors ${
-              isChatOpen 
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
-            }`}
-          >
-            <MessageCircle className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={() => onDelete(note.id)}
-            className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {/* Header action buttons removed per design update */}
         </div>
       </div>
 

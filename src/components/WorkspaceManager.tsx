@@ -1,14 +1,18 @@
 import React, { useRef } from 'react';
-import { Save, FolderOpen, Plus, Download } from 'lucide-react';
+import { FolderOpen, Plus, Download, MessageCircle, Trash2 } from 'lucide-react';
 import { workspaceManager, WorkspaceData } from '../utils/workspace';
 
 interface WorkspaceManagerProps {
   onWorkspaceLoad: (data: WorkspaceData) => void;
   onError: (message: string) => void;
   currentWorkspaceFile: string | null;
+  onToggleChat: () => void;
+  isChatOpen: boolean;
+  onDeleteChat: () => void;
+  hasSelectedNote: boolean;
 }
 
-export function WorkspaceManager({ onWorkspaceLoad, onError, currentWorkspaceFile }: WorkspaceManagerProps) {
+export function WorkspaceManager({ onWorkspaceLoad, onError, currentWorkspaceFile, onToggleChat, isChatOpen, onDeleteChat, hasSelectedNote }: WorkspaceManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLoadWorkspace = () => {
@@ -92,6 +96,29 @@ export function WorkspaceManager({ onWorkspaceLoad, onError, currentWorkspaceFil
       >
         <Download className="w-3 h-3" />
         <span>Save</span>
+      </button>
+
+      {/* Toggle AI Assistant */}
+      <button
+        onClick={onToggleChat}
+        className={`flex items-center space-x-1 px-3 py-1.5 text-xs rounded transition-colors ${
+          isChatOpen ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+        }`}
+        title={isChatOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
+      >
+        <MessageCircle className="w-3 h-3" />
+        <span>AI</span>
+      </button>
+
+      {/* Delete Chat Button */}
+      <button
+        onClick={onDeleteChat}
+        disabled={!hasSelectedNote}
+        className="flex items-center space-x-1 px-3 py-1.5 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Delete Current Chat"
+      >
+        <Trash2 className="w-3 h-3" />
+        <span>Delete</span>
       </button>
 
       {/* Current workspace indicator */}
