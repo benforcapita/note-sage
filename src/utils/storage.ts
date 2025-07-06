@@ -25,25 +25,5 @@ export const storage = {
         console.error('Failed to save notes:', error);
       }
     }
-  },
-  chat: {
-    get: (): ChatMessage[] => {
-      try {
-        const messages = localStorage.getItem('chatMessages');
-        return messages ? JSON.parse(messages).map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        })) : [];
-      } catch {
-        return [];
-      }
-    },
-    set: (messages: ChatMessage[]) => {
-      try {
-        localStorage.setItem('chatMessages', JSON.stringify(messages));
-      } catch (error) {
-        console.error('Failed to save chat messages:', error);
-      }
-    }
   }
 };
