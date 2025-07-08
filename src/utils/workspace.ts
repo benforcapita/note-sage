@@ -56,7 +56,7 @@ class WorkspaceManager {
         }))
       };
       
-      this.currentWorkspaceFile = file.name;
+      this.setCurrentWorkspaceFile(file.name);
       // Persist loaded workspace so that it can be restored on next launch
       this.persist();
       return this.data;
@@ -66,7 +66,26 @@ class WorkspaceManager {
     }
   }
 
-  // Save workspace to file
+  // Save workspace to the current file
+  async saveWorkspaceToFile(): Promise<void> {
+    if (!this.currentWorkspaceFile) {
+      throw new Error('No workspace file is currently loaded.');
+    }
+    
+    try {
+      const blob = await this.saveWorkspace();
+      // This is a placeholder for where you would integrate with a file system access API
+      // In a browser environment, you'd typically trigger a download.
+      // For this example, we'll just log that it's "saved".
+      console.log(`Workspace saved to ${this.currentWorkspaceFile}`);
+    } catch (error) {
+      console.error('Failed to save workspace to file:', error);
+      throw error;
+    }
+  }
+
+
+  // Save workspace to blob
   async saveWorkspace(): Promise<Blob> {
     try {
       this.data.lastUpdated = new Date().toISOString();
@@ -104,15 +123,24 @@ class WorkspaceManager {
     return this.currentWorkspaceFile;
   }
 
+  setCurrentWorkspaceFile(fileName: string | null) {
+    this.currentWorkspaceFile = fileName;
+    if (fileName) {
+      localStorage.setItem('currentWorkspaceFile', fileName);
+    } else {
+      localStorage.removeItem('currentWorkspaceFile');
+    }
+  }
+
   // Create new workspace
-  createNewWorkspace(): WorkspaceData {
+  createNewWorkspace(fileName?: string): WorkspaceData {
     this.data = {
       notes: [],
       chatMessages: [],
       version: '1.0.0',
       lastUpdated: new Date().toISOString()
     };
-    this.currentWorkspaceFile = null;
+    this.setCurrentWorkspaceFile(fileName || null);
     this.persist();
     return this.data;
   }
@@ -151,6 +179,11 @@ class WorkspaceManager {
           timestamp: new Date(msg.timestamp)
         }))
       };
+
+      const savedFile = localStorage.getItem('currentWorkspaceFile');
+      if (savedFile) {
+        this.currentWorkspaceFile = savedFile;
+      }
     } catch (error) {
       console.error('Failed to restore workspace from localStorage:', error);
     }

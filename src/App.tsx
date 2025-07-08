@@ -22,35 +22,13 @@ function AppContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoadPromptVisible, setIsLoadPromptVisible] = useState<boolean>(false);
 
-  // Load data on app start - try workspace first, then fall back to localStorage
+  // Load data on app start
   useEffect(() => {
-    const workspaceData = workspaceManager.getData();
-    
-    if (workspaceData.notes.length > 0 || workspaceData.chatMessages.length > 0) {
-      // Use workspace data if available
-      setNotes(workspaceData.notes);
-      setChatMessages(workspaceData.chatMessages);
-      setCurrentWorkspaceFile(workspaceManager.getCurrentWorkspaceFile());
+    const lastWorkspaceFile = workspaceManager.getCurrentWorkspaceFile();
+    if (lastWorkspaceFile) {
+      const workspaceData = workspaceManager.getData();
+      handleWorkspaceLoad(workspaceData);
     } else {
-      // Fall back to localStorage for backwards compatibility
-      const savedNotes = storage.notes.get();
-      
-      setNotes(savedNotes);
-
-      // If we have localStorage data for notes, migrate them to the workspace
-      if (savedNotes.length > 0) {
-        workspaceManager.updateNotes(savedNotes);
-      }
-    }
-    
-    // Select the first note if available
-    const currentNotes = workspaceData.notes.length > 0 ? workspaceData.notes : storage.notes.get();
-    if (currentNotes.length > 0) {
-      setSelectedNoteId(currentNotes[0].id);
-    }
-
-    // Show load prompt if no workspace file has been selected yet
-    if (!workspaceManager.getCurrentWorkspaceFile()) {
       setIsLoadPromptVisible(true);
     }
   }, []);
@@ -123,9 +101,12 @@ function AppContent() {
   };
 
   const handleCreateNewWorkspace = () => {
-    const data = workspaceManager.createNewWorkspace();
-    handleWorkspaceLoad(data);
-    setIsLoadPromptVisible(false);
+    const fileName = prompt('Enter a name for the new workspace (e.g., "my-notes.json"):');
+    if (fileName) {
+      const data = workspaceManager.createNewWorkspace(fileName);
+      handleWorkspaceLoad(data);
+      setIsLoadPromptVisible(false);
+    }
   };
 
   const selectedNote = notes.find(note => note.id === selectedNoteId) || null;

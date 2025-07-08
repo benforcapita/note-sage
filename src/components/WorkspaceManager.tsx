@@ -37,22 +37,37 @@ export function WorkspaceManager({ onWorkspaceLoad, onError, currentWorkspaceFil
   const handleSaveWorkspace = async () => {
     try {
       const blob = await workspaceManager.saveWorkspace();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = currentWorkspaceFile || `workspace-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      
+      // Use the File System Access API to show a save file picker
+      const fileHandle = await window.showSaveFilePicker({
+        suggestedName: currentWorkspaceFile || `workspace-${new Date().toISOString().split('T')[0]}.json`,
+        types: [{
+          description: 'JSON Files',
+          accept: { 'application/json': ['.json'] },
+        }],
+      });
+
+      // Create a writable stream and write the blob to the file
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      
+      // Update the current workspace file name
+      workspaceManager.setCurrentWorkspaceFile(fileHandle.name);
+      // Manually trigger a re-render if necessary, although updating context/state should do it.
+      onWorkspaceLoad(workspaceManager.getData());
+
     } catch (error) {
-      onError('Failed to save workspace file.');
+      if ((error as DOMException).name !== 'AbortError') {
+        onError('Failed to save workspace file.');
+      }
     }
   };
 
   const handleNewWorkspace = () => {
-    if (window.confirm('Create a new workspace? This will clear all current data.')) {
-      const data = workspaceManager.createNewWorkspace();
+    const fileName = prompt('Enter a name for the new workspace (e.g., "my-notes.json"):');
+    if (fileName) {
+      const data = workspaceManager.createNewWorkspace(fileName);
       onWorkspaceLoad(data);
     }
   };
