@@ -12,6 +12,7 @@ export interface Note {
   createdAt: Date;
   updatedAt: Date;
   tags: string[];
+  draft?: string;
 }
 
 export interface ChatMessage {

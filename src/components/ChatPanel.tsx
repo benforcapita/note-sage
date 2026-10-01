@@ -1,189 +1,52 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, X, Loader2 } from 'lucide-react';
-import { ChatMessage, Note } from '../types';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUp, Leaf, Search, X, List, Clock, Trash2 } from 'lucide-react';
+import type { ChatMessage, Note } from '../types';
 import { llmService } from '../utils/llm';
-import { detectTextDirection, getTextDirectionClass } from '../utils/textDirection';
-
-interface ChatPanelProps {
-  messages: ChatMessage[];
-  notes: Note[];
-  onSendMessage: (message: ChatMessage) => void;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export function ChatPanel({ messages, notes, onSendMessage, isOpen, onClose }: ChatPanelProps) {
+import { detectTextDirection } from '../utils/textDirection';
+interface Props { messages: ChatMessage[]; notes: Note[]; onSendMessage: (message: ChatMessage) => void; onClose: () => void; onClear: () => void; }
+export function ChatPanel({ messages, notes, onSendMessage, onClose, onClear }: Props) {
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const [busy, setBusy] = useState(false);
+  const active = useRef(true);
+  const sending = useRef(false);
+  const end = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [messages.length]);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: input.trim(),
-      timestamp: new Date()
+    const previous = document.activeElement as HTMLElement;
+    const closeButton = panel.current?.querySelector<HTMLButtonElement>('[aria-label="Close local helper"]');
+    closeButton?.focus();
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.querySelector('dialog[open]')) { onClose(); event.preventDefault(); }
+      if (event.key === 'Tab' && window.matchMedia('(max-width: 1100px)').matches) {
+        const elements = panel.current?.querySelectorAll<HTMLElement>('button:not([disabled]), textarea:not([disabled])');
+        if (!elements?.length) return;
+        const first = elements[0], last = elements[elements.length - 1];
+        if (event.shiftKey && document.activeElement === first) { last.focus(); event.preventDefault(); }
+        else if (!event.shiftKey && document.activeElement === last) { first.focus(); event.preventDefault(); }
+      }
     };
-
-    onSendMessage(userMessage);
-    setInput('');
-    setIsLoading(true);
-
+    document.addEventListener('keydown', key);
+    return () => { document.removeEventListener('keydown', key); previous?.focus(); };
+  }, [onClose]);
+  const send = async (query = input) => {
+    if (!query.trim() || sending.current) return;
+    sending.current = true; setBusy(true); setInput('');
+    onSendMessage({ id: crypto.randomUUID(), type: 'user', content: query.trim(), timestamp: new Date() });
     try {
-      const response = await llmService.chatWithNotes(input, notes);
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: response,
-        timestamp: new Date()
-      };
-      onSendMessage(assistantMessage);
-    } catch (error) {
-      console.error('Chat error:', error);
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date()
-      };
-      onSendMessage(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+      const response = await llmService.chatWithNotes(query, notes);
+      if (active.current) onSendMessage({ id: crypto.randomUUID(), type: 'assistant', content: response, timestamp: new Date() });
+    } finally { if (active.current) setBusy(false); sending.current = false; }
   };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const formatMessage = (content: string) => {
-    return content.split('\n').map((line, index) => (
-      <React.Fragment key={index}>
-        {line}
-        {index < content.split('\n').length - 1 && <br />}
-      </React.Fragment>
-    ));
-  };
-
-  const getInputDirection = () => {
-    const direction = detectTextDirection(input);
-    return direction === 'rtl' ? 'rtl-input hebrew-text' : 'ltr-input';
-  };
-
-  return (
-    <div className={`
-      fixed right-0 top-0 h-full w-96 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-xl z-40
-      transform transition-transform duration-300 ease-in-out
-      ${isOpen ? 'translate-x-0' : 'translate-x-full'}
-    `}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-gray-900 dark:text-white">AI Assistant</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Chat about your notes</p>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <X className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-        </button>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 h-[calc(100vh-140px)]">
-        {messages.length === 0 ? (
-          <div className="text-center py-12">
-            <Bot className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 mb-2">Start a conversation</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">
-              Ask me to summarize your notes or answer questions about them
-            </p>
-          </div>
-        ) : (
-          messages.map(message => (
-            <div
-              key={message.id}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`
-                max-w-[80%] p-3 rounded-lg
-                ${message.type === 'user' 
-                  ? 'bg-blue-500 dark:bg-blue-600 text-white' 
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                }
-              `}>
-                <div className="flex items-start space-x-2">
-                  {message.type === 'assistant' && (
-                    <Bot className="w-4 h-4 mt-1 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-                  )}
-                  <div className="flex-1">
-                    <div className={`text-sm ${getTextDirectionClass(message.content)}`}>
-                      {formatMessage(message.content)}
-                    </div>
-                    <div className={`
-                      text-xs mt-1 opacity-70
-                      ${message.type === 'user' ? 'text-blue-100 dark:text-blue-200' : 'text-gray-500 dark:text-gray-400'}
-                    `}>
-                      {message.timestamp.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Loader2 className="w-4 h-4 animate-spin text-gray-600 dark:text-gray-400" />
-                <span className="text-sm text-gray-600 dark:text-gray-400">Thinking...</span>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex space-x-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask about your notes..."
-            className={`flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${getInputDirection()}`}
-            rows={1}
-            disabled={isLoading}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+  return <aside ref={panel} className="helper-panel" aria-label="Local notes helper">
+    <div className="helper-header"><span className="helper-symbol"><Leaf size={19} /></span><div><h2>A little help</h2><p>Local tools, no AI model</p></div><button className="icon-button" aria-label="Clear helper history" title="Clear helper history" disabled={!messages.length} onClick={onClear}><Trash2 size={16} /></button><button className="icon-button" aria-label="Close local helper" onClick={onClose}><X size={19} /></button></div>
+    <p className="helper-privacy"><span className="status-dot" />Works offline. Your notes never leave this browser.</p>
+    <div className="helper-messages" aria-live="polite">
+      {!messages.length && <div className="helper-welcome"><span className="eyebrow">A FRESH PERSPECTIVE</span><h3>Find your way<br />through your thoughts.</h3><p>Get a simple overview, find a phrase, or pick up where you left off.</p><div className="helper-suggestions"><button onClick={() => send('overview')}><List size={17} /><span>Overview of my notes</span></button><button onClick={() => send('recent notes')}><Clock size={17} /><span>What did I write recently?</span></button><button onClick={() => { setInput('find '); panel.current?.querySelector<HTMLTextAreaElement>('textarea')?.focus(); }}><Search size={17} /><span>Find a word or phrase</span></button></div><p className="helper-limit">This helper uses exact keyword matching and excerpts. It doesn’t generate answers or infer meaning.</p></div>}
+      {messages.map(message => <div className={`helper-message ${message.type}`} key={message.id}><span className="message-author">{message.type === 'user' ? 'YOU' : 'LOCAL HELPER'}</span><p dir={detectTextDirection(message.content)}>{message.content}</p><time dateTime={message.timestamp.toISOString()}>{message.timestamp.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</time></div>)}
+      {busy && <span className="muted">Reading your notes…</span>}<div ref={end} />
     </div>
-  );
+    <form className="helper-composer" onSubmit={event => { event.preventDefault(); void send(); }}><textarea aria-label="Ask the local helper" placeholder="Try “find travel”" dir="auto" rows={2} maxLength={1000} value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }} /><button aria-label="Send to helper" className="send-thought" disabled={!input.trim() || busy}><ArrowUp size={19} /></button></form>
+  </aside>;
 }
